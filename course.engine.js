@@ -148,8 +148,9 @@ function others(it,n,f=()=>true){
   const a=shuffle(ITEMS.filter(o=>o!==it&&o.u===it.u&&f(o))),b=shuffle(ITEMS.filter(o=>o!==it&&o.u!==it.u&&o.d.cat===it.d.cat&&f(o))),c=shuffle(ITEMS.filter(o=>o!==it&&f(o)));
   const out=[];for(const o of [...a,...b,...c]){if(out.length>=n)break;if(!out.includes(o))out.push(o)}return out;
 }
-function qPhoto(it){return {item:it.name,multi:false,title:"Что на фото?",prompt:"Назови позицию",photo:it.name,showPhoto:true,opts:shuffle([it,...others(it,3)].map(o=>({l:o.name,ok:o===it}))),ans:formulaHTML(it)}}
-function qPick(it){return {item:it.name,multi:false,pics:true,title:"Найди на фото",prompt:`Где «${it.name}»?`,opts:shuffle([it,...others(it,3)].map(o=>({l:o.name,ok:o===it}))),ans:formulaHTML(it)}}
+const hasPh=it=>!!it.d.photo; // у позиций без фото нет вопросов «по фото»
+function qPhoto(it){if(!hasPh(it))return qPO(it);return {item:it.name,multi:false,title:"Что на фото?",prompt:"Назови позицию",photo:it.name,showPhoto:true,opts:shuffle([it,...others(it,3)].map(o=>({l:o.name,ok:o===it}))),ans:formulaHTML(it)}}
+function qPick(it){if(!hasPh(it))return qPO(it);return {item:it.name,multi:false,pics:true,title:"Найди на фото",prompt:`Где «${it.name}»?`,opts:shuffle([it,...others(it,3,hasPh)].map(o=>({l:o.name,ok:o===it}))),ans:formulaHTML(it)}}
 const GENERIC=new Set(["сироп","гель нейтральный","взбитый ганаш","лимонная глазурь","масло сливочное","мука пшеничная в/с","меланж","сахар","разрыхлитель"]);
 function qWhich(it){
   for(const l of shuffle(it.parts.filter(p=>!GENERIC.has(p)))){
@@ -179,8 +180,8 @@ function buildLesson(u){
   S.push({t:"sec",n:++part,title:"Позиции",text:`${u.items.length} ${plural(u.items.length,"позиция","позиции","позиций")}. Для каждой сначала формула «основа + что добавили», потом сразу проверка.`});
   u.items.forEach(it=>S.push({t:"item",name:it.name},{t:"test",g:it.own?"own":it.plus.length?"plus":"same",name:it.name}));
   S.push({t:"sec",n:++part,title:"Что есть что",text:"Узнаём по фото. На смене ты видишь витрину, а не список."});
-  shuffle(u.items).slice(0,6).forEach(it=>S.push({t:"test",g:"photo",name:it.name}));
-  shuffle(u.items).slice(0,2).forEach(it=>S.push({t:"test",g:"pick",name:it.name}));
+  shuffle(u.items.filter(hasPh)).slice(0,6).forEach(it=>S.push({t:"test",g:"photo",name:it.name}));
+  shuffle(u.items.filter(hasPh)).slice(0,2).forEach(it=>S.push({t:"test",g:"pick",name:it.name}));
   S.push({t:"sec",n:++part,title:"Итоговый тест",text:"Вперемешку, плюс пара вопросов из прошлых уроков, чтобы старое не забывалось."});
   const fin=shuffle(u.items).slice(0,6).map((it,k)=>({t:"test",g:["which","po","baseof"][k%3],name:it.name}));
   shuffle(ITEMS.filter(it=>it.u.n<u.n)).slice(0,2).forEach(it=>fin.push({t:"test",g:shuffle(["po","photo","which"])[0],name:it.name,tag:"Из прошлого урока"}));
